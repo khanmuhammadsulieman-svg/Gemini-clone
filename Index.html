@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Gemini Clone API</title>
+    
+    <!-- Google Fonts & Material Symbols (Using Outfit as a close match for Google Sans) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    
+    <!-- Markdown Parser & Sanitizer -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
+
+    <style>
+        :root {
+            /* Accurate Gemini Dark Mode Colors */
+            --bg-main: #131314;
+            --bg-surface: #1e1f20;
+            --bg-hover: #333537;
+            --text-primary: #e3e3e3;
+            --text-secondary: #c4c7c5;
+            --user-bubble: #282a2c;
+            --input-border: #444746;
+            --accent-spark: #a8c7fa;
+            --sidebar-width: 280px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-primary);
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* Sidebar Styling */
+        .sidebar {
+            width: var(--sidebar-width);
+            background-color: var(--bg-surface);
+            display: flex;
+            flex-direction: column;
+            padding: 20px 16px;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 100;
+        }
+
+        .new-chat-btn {
+            background-color: transparent;
+            color: var(--text-secondary);
+            border: none;
+            padding: 10px 16px;
+            border-radius: 50px;
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            font-family: 'Outfit', sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            width: fit-content;
+            transition: background-color 0.2s;
+            margin-bottom: 24px;
+        }
+
+        .new-chat-btn:hover {
+            background-color: var(--bg-hover);
+        }
+
+        .new-chat-btn .material-symbols-outlined {
+            font-size: 20px;
+        }
+
+        /* Main Content Area */
+        .main-content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            height: 100%;
+        }
+
+        header {
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-family: 'Outfit', sans-serif;
+            font-size: 22px;
+            font-weight: 400;
+            color: var(--text-secondary);
+        }
+
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            background-color: var(--accent-spark);
+            color: #000;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-family: 'Outfit', sans-serif;
+            font-size: 18px;
+        }
+
+        /* Chat Area */
+        .chat-container {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 0 24px 24px;
+            display: flex;
+            flex-direction: column;
+            scroll-behavior: smooth;
+        }
+
+        .chat-container::-webkit-scrollbar { width: 8px; }
+        .chat-container::-webkit-scrollbar-track { background: transparent; }
+        .chat-container::-webkit-scrollbar-thumb { background: var(--input-border); border-radius: 4px; }
+
+        /* Welcome Screen with Glowing Text & Cards */
+        .welcome-screen {
+            display: flex;
+            flex-direction: column;
+            max-width: 900px;
+            margin: 40px auto 0;
+            width: 100%;
+            padding: 20px;
+        }
+
+        .greeting {
+            font-family: 'Outfit', sans-serif;
+            font-size: 56px;
+            font-weight: 500;
+            letter-spacing: -1px;
+            line-height: 1.2;
+            margin-bottom: 8px;
+        }
+
+        .gradient-text {
+            /* Authentic Gemini Gradient */
+            background: linear-gradient(74deg, #4285f4 0, #9b72cb 9%, #d96570 20%, #d96570 24%, #9b72cb 35%, #4285f4 44%, #9b72cb 50%, #d96570 56%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-size: 400% 100%;
+            animation: gradientMove 8s ease infinite;
+        }
+
+        @keyframes gradientMove {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .sub-greeting {
+            font-family: 'Outfit', sans-serif;
+            font-size: 56px;
+            font-weight: 500;
+            color: #444746;
+            margin-bottom: 60px;
+            letter-spacing: -1px;
+        }
+
+        /* Quick Start Cards */
+        .suggestion-cards {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            width: 100%;
+        }
+
+        .card {
+            background-color: var(--bg-surface);
+            border-radius: 12px;
+            padding: 16px;
+            height: 200px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        .card:hover {
+            background-color: var(--bg-hover);
+        }
+
+        .card p {
+            color: var(--text-primary);
+            font-size: 15px;
+            line-height: 1.4;
+        }
+
+        .card .icon-wrapper {
+            align-self: flex-end;
+            background-color: var(--bg-main);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .card .material-symbols-outlined {
+            font-size: 20px;
+            color: var(--text-secondary);
+        }
+
+        /* Messages */
+        .message-wrapper {
+            max-width: 850px;
+            width: 100%;
+            margin: 0 auto;
+            display: flex;
+            gap: 16px;
+            padding: 16px 0;
+        }
+
+        .message-wrapper.user {
+            justify-content: flex-end;
+        }
+
+        .message-wrapper.user .avatar {
+            display: none; /* Hide user avatar in chat to match real Gemini */
+        }
+
+        .model-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            background: linear-gradient(135deg, #1e1f20, #131314);
+            border: 1px solid var(--input-border);
+            color: var(--accent-spark);
+        }
+
+        .message-content {
+            font-size: 16px;
+            line-height: 1.6;
+            word-wrap: break-word;
+            color: var(--text-primary);
+        }
+
+        /* User Bubble Styling */
+        .user .message-content {
+            background-color: var(--user-bubble);
+            padding: 12px 20px;
+            border-radius: 24px;
+            border-top-right-radius: 4px; /* Distinct chat bubble look */
+            max-width: 80%;
+        }
+
+        .model .message-content {
+            padding-top: 6px;
+            width: 100%;
+        }
+
+        /* Input Area */
+        .input-container {
+            max-width: 900px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 12px 24px 24px;
+        }
+
+        .input-box {
+            background-color: var(--bg-surface);
+            border-radius: 32px;
+            display: flex;
+            align-items: flex-end;
+            padding: 12px 16px;
+            gap: 8px;
+            border: 1px solid transparent;
+            transition: background 0.3s;
+        }
+
+        .input-box:focus-within {
+            background-color: var(--bg-hover);
+        }
+
+        textarea {
+            flex-grow: 1;
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 16px;
+            resize: none;
+            max-height: 200px;
+            padding: 8px;
+            outline: none;
+            line-height: 1.5;
+        }
+
+        textarea::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 4px;
+            padding-bottom: 2px;
+        }
+
+        .icon-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s, color 0.2s;
+        }
+
+        .icon-btn:hover {
+            background-color: var(--bg-main);
+            color: var(--text-primary);
+        }
+
+        .send-btn {
+            color: var(--accent-spark);
+        }
+
+        .send-btn:disabled {
+            color: var(--input-border);
+            cursor: not-allowed;
+            background: transparent;
+        }
+
+        /* Sparkle Loading Animation */
+        .sparkle-loading {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding-top: 8px;
+            color: var(--accent-spark);
+            animation: pulse 1.5s infinite;
+        }
+        
+        .sparkle-loading span {
+            font-size: 24px;
+            animation: spin 3s linear infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+
+        @keyframes spin {
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Markdown Styling inside Model responses */
+        .message-content p { margin-bottom: 16px; }
+        .message-content p:last-child { margin-bottom: 0; }
+        .message-content code { background: #282a2c; padding: 3px 6px; border-radius: 6px; font-family: monospace; font-size: 14px;}
+        .message-content pre { background: #1a1a1a; padding: 16px; border-radius: 12px; overflow-x: auto; margin: 16px 0; border: 1px solid var(--input-border); }
+        .message-content pre code { background: none; padding: 0; font-size: 14px;}
+        .message-content strong { color: #fff; font-weight: 600; }
+        .message-content ul, .message-content ol { padding-left: 24px; margin-bottom: 16px; }
+        .message-content li { margin-bottom: 8px; }
+
+        /* Responsive */
+        .mobile-menu-btn {
+            display: none;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 8px;
+        }
+
+        @media (max-width: 900px) {
+            .suggestion-cards {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .greeting, .sub-greeting { font-size: 42px; }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                position: absolute;
+                height: 100%;
+                transform: translateX(-100%);
+                box-shadow: 4px 0 16px rgba(0,0,0,0.5);
+            }
+            .sidebar.active { transform: translateX(0); }
+            .mobile-menu-btn { display: block; }
+            
+            .suggestion-cards {
+                display: flex;
+                overflow-x: auto;
+                scroll-snap-type: x mandatory;
+                padding-bottom: 10px;
+            }
+            .card {
+                min-width: 200px;
+                scroll-snap-align: start;
+                height: 160px;
+            }
+            .greeting, .sub-greeting { font-size: 32px; }
+            .sub-greeting { margin-bottom: 30px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar -->
+    <nav class="sidebar" id="sidebar">
+        <button class="new-chat-btn" onclick="startNewChat()">
+            <span class="material-symbols-outlined">add</span>
+            New chat
+        </button>
+        <!-- Additional sidebar history items can go here -->
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <header>
+            <div class="header-title">
+                <button class="mobile-menu-btn" onclick="toggleSidebar()">
+                    <span class="material-symbols-outlined">menu</span>
+                </button>
+                <span style="font-size: 20px;">Gemini</span>
+            </div>
+            <div class="user-avatar">U</div>
+        </header>
+
+        <div class="chat-container" id="chat-container">
+            <!-- Welcome Screen -->
+            <div class="welcome-screen" id="welcome-screen">
+                <h1 class="greeting"><span class="gradient-text">Hello, User</span></h1>
+                <h2 class="sub-greeting">How can I help you today?</h2>
+
+                <div class="suggestion-cards">
+                    <div class="card" onclick="triggerSuggestion('Create a fun 3-day itinerary for Tokyo')">
+                        <p>Create a fun 3-day itinerary for Tokyo</p>
+                        <div class="icon-wrapper"><span class="material-symbols-outlined">flight_takeoff</span></div>
+                    </div>
+                    <div class="card" onclick="triggerSuggestion('Draft a professional email asking for a deadline extension')">
+                        <p>Draft a professional email asking for a deadline extension</p>
+                        <div class="icon-wrapper"><span class="material-symbols-outlined">edit_document</span></div>
+                    </div>
+                    <div class="card" onclick="triggerSuggestion('Explain quantum computing in simple terms')">
+                        <p>Explain quantum computing in simple terms</p>
+                        <div class="icon-wrapper"><span class="material-symbols-outlined">lightbulb</span></div>
+                    </div>
+                    <div class="card" onclick="triggerSuggestion('Help me write a Python script to scrape a website')">
+                        <p>Help me write a Python script to scrape a website</p>
+                        <div class="icon-wrapper"><span class="material-symbols-outlined">code</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="input-container">
+            <div class="input-box">
+                <button class="icon-btn"><span class="material-symbols-outlined">add_photo_alternate</span></button>
+                <button class="icon-btn"><span class="material-symbols-outlined">mic</span></button>
+                
+                <textarea 
+                    id="user-input" 
+                    placeholder="Enter a prompt here" 
+                    rows="1"
+                    oninput="autoResize(this)"
+                    onkeydown="handleKeyDown(event)"
+                ></textarea>
+                
+                <div class="action-buttons">
+                    <button class="icon-btn send-btn" id="send-btn" onclick="sendMessage()" disabled>
+                        <span class="material-symbols-outlined">send</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const chatContainer = document.getElementById('chat-container');
+        const userInput = document.getElementById('user-input');
+        const sendBtn = document.getElementById('send-btn');
+        const welcomeScreen = document.getElementById('welcome-screen');
+        const sidebar = document.getElementById('sidebar');
+
+        // Configure Marked.js options
+        marked.setOptions({
+            breaks: true,
+            gfm: true
+        });
+
+        // Event Listeners
+        function toggleSidebar() {
+            sidebar.classList.toggle('active');
+        }
+
+        function startNewChat() {
+            chatContainer.innerHTML = '';
+            chatContainer.appendChild(welcomeScreen);
+            welcomeScreen.style.display = 'flex';
+            userInput.value = '';
+            autoResize(userInput);
+            if(window.innerWidth <= 768) sidebar.classList.remove('active');
+        }
+
+        function autoResize(textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = textarea.scrollHeight + 'px';
+            sendBtn.disabled = textarea.value.trim() === '';
+        }
+
+        function handleKeyDown(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        }
+
+        // Quick Start Card Click
+        function triggerSuggestion(text) {
+            userInput.value = text;
+            autoResize(userInput);
+            sendMessage();
+        }
+
+        function generateId() {
+            return 'msg-' + Math.random().toString(36).substr(2, 9);
+        }
+
+        function appendMessage(role, text, id = null) {
+            if (welcomeScreen.style.display !== 'none') {
+                welcomeScreen.style.display = 'none';
+            }
+
+            const wrapper = document.createElement('div');
+            wrapper.className = `message-wrapper ${role}`;
+            if (id) wrapper.id = id;
+
+            let avatarHtml = '';
+            let contentHtml = '';
+
+            if (role === 'user') {
+                const escapedText = text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                contentHtml = `<div class="message-content">${escapedText}</div>`;
+            } else {
+                // Real Gemini star icon
+                avatarHtml = `
+                    <div class="model-avatar">
+                        <span class="material-symbols-outlined">sparkle</span>
+                    </div>
+                `;
+                
+                if (text === 'LOADING') {
+                    contentHtml = `
+                        <div class="message-content">
+                            <div class="sparkle-loading">
+                                <span class="material-symbols-outlined">sparkle</span>
+                                Generating...
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    const parsedHtml = DOMPurify.sanitize(marked.parse(text));
+                    contentHtml = `<div class="message-content">${parsedHtml}</div>`;
+                }
+            }
+
+            wrapper.innerHTML = `${avatarHtml}${contentHtml}`;
+            chatContainer.appendChild(wrapper);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+
+            return wrapper.id;
+        }
+
+        function updateMessage(id, newText) {
+            const wrapper = document.getElementById(id);
+            if (wrapper) {
+                const contentDiv = wrapper.querySelector('.message-content');
+                contentDiv.innerHTML = DOMPurify.sanitize(marked.parse(newText));
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }
+        }
+
+        async function sendMessage() {
+            const text = userInput.value.trim();
+            if (!text) return;
+
+            // 1. User Message
+            appendMessage('user', text);
+            
+            // 2. UI Reset
+            userInput.value = '';
+            autoResize(userInput);
+            sendBtn.disabled = true;
+
+            // 3. Loading State
+            const loadingId = generateId();
+            appendMessage('model', 'LOADING', loadingId);
+
+            // 4. API Request
+            try {
+                const url = `https://chat.sychio.workers.dev/?text=${encodeURIComponent(text)}`;
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (data.success && data.output) {
+                    updateMessage(loadingId, data.output);
+                } else {
+                    updateMessage(loadingId, "⚠️ *An error occurred parsing the response.*");
+                }
+            } catch (error) {
+                console.error('API Error:', error);
+                updateMessage(loadingId, "⚠️ *Network error. Failed to connect to the API.*");
+            }
+        }
+    </script>
+</body>
+</html>
